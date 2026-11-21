@@ -1,0 +1,39 @@
+name: Build Nex.exe
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Find app folder
+        shell: bash
+        run: |
+          P=$(find . -name package.json -not -path "*/node_modules/*" | head -n 1)
+          if [ -z "$P" ]; then echo "package.json не найден!"; ls -R; exit 1; fi
+          D=$(dirname "$P")
+          for f in main.js preload.js extras-main.js build/icon.png renderer/index.html renderer/renderer.js renderer/extras.js renderer/i18n.js renderer/splash.html renderer/popup.html renderer/logo.png renderer/nex/happy.png ps/common.ps1 ps/media.ps1 ps/cmd.ps1 ps/fg.ps1; do
+            if [ ! -f "$D/$f" ]; then echo "Не хватает файла: $f"; exit 1; fi
+          done
+          echo "APP=$D" >> $GITHUB_ENV
+      - name: Config
+        shell: bash
+        env:
+          S: ${{ secrets.NEX_SERVER }}
+        run: |
+          if [ -z "$S" ]; then echo "Нет секрета NEX_SERVER!"; exit 1; fi
+          node -e "require('fs').writeFileSync(process.env.APP+'/key.json',JSON.stringify({server:process.env.S}))"
+      - name: Install
+        shell: bash
+        run: cd "$APP" && npm install --no-audit --no-fund
+      - name: Build
+        shell: bash
+        run: cd "$APP" && npm run dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Nex-1.0.0
+          path: ${{ env.APP }}/dist/Nex.exe
