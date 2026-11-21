@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'">
+<title>Nex</title>
+<style>
+:root{--acc:#8b7bff;--tx:#f2f1f6;--mut:#8e8b9c;--mut2:#b7b4c4;--line:rgba(255,255,255,.08);--card:rgba(255,255,255,.07);--card2:rgba(255,255,255,.12);--ok:#3fcf8e;--bad:#ff6b6b;--warn:#f5b83d;--mono:"Cascadia Code","Cascadia Mono",Consolas,monospace}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:transparent;overflow:hidden;font:13px/1.45 "Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;color:var(--tx);user-select:none}
+button{font:inherit;color:inherit;border:none;background:none;padding:0;cursor:pointer}
+button:disabled{opacity:.5;cursor:default}
+input,textarea,select{font:inherit;color:var(--tx);user-select:text}
+[hidden]{display:none!important}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:6px}
+svg{display:block}
+
+#island{position:absolute;left:50%;top:0;transform:translateX(-50%);width:220px;height:36px;border-radius:0 0 18px 18px;background:#000;overflow:hidden;box-shadow:0 0 0 1px rgba(255,255,255,.06);transition:width .55s cubic-bezier(.32,1.35,.45,1),height .55s cubic-bezier(.32,1.35,.45,1),border-radius .45s,top .4s;cursor:pointer}
+#island.m-open,#island.m-onb{cursor:default}
+.ibg{position:absolute;inset:-24px;background-size:cover;background-position:center;opacity:0;transition:opacity .3s}
+.idim{position:absolute;inset:0;background:rgba(0,0,0,.55);opacity:0;transition:opacity .3s}
+
+.mini{position:absolute;inset:0;display:flex;align-items:center;gap:10px;padding:0 13px 0 6px;opacity:1;transition:opacity .18s}
+.m-open .mini,.m-onb .mini{opacity:0;pointer-events:none}
+.nexav{width:26px;height:26px;border-radius:50%;background:#ece7ff;overflow:hidden;display:flex;align-items:flex-end;justify-content:center;flex:none}
+.nexav img{width:29px}
+.mcover{width:26px;height:26px;border-radius:7px;object-fit:cover;flex:none}
+.mmid{flex:1;min-width:0;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+.mright{flex:none;font-size:13px;font-weight:600;display:flex;align-items:center}
+.eq{display:flex;align-items:center;gap:2px;height:14px}
+.eq i{width:3px;border-radius:2px;background:var(--acc);height:4px;animation:eq 1s ease-in-out infinite}
+.eq i:nth-child(2){animation-delay:-.3s}.eq i:nth-child(3){animation-delay:-.6s}.eq i:nth-child(4){animation-delay:-.15s}
+.eq.paused i{animation:none;height:4px}
+@keyframes eq{0%,100%{height:4px}50%{height:14px}}
+
+.full{position:absolute;left:0;top:0;width:720px;padding:12px 20px 18px;opacity:0;pointer-events:none;transition:opacity .12s}
+.m-open .full{opacity:1;pointer-events:auto;transition:opacity .3s .18s}
+.drop .full{padding-top:18px}
+.hdr{display:flex;align-items:center;justify-content:space-between;height:32px}
+.tabs{display:flex;gap:3px}
+.tab{width:36px;height:30px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--mut)}
+.tab:hover{color:var(--tx);background:rgba(255,255,255,.06)}
+.tab.on{background:var(--card2);color:#fff}
+.tab svg{width:16px;height:16px}
+.hright{display:flex;align-items:center;gap:12px}
+.batt{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600}
+.bicon{width:24px;height:12px;border:1.5px solid rgba(255,255,255,.55);border-radius:4px;padding:1.5px;display:flex}
+.bicon i{border-radius:1.5px;background:var(--ok)}
+.ava{width:30px;height:30px;border-radius:50%;background:var(--acc) center/cover;color:#0b0b0f;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;flex:none}
+section{margin-top:14px}
+
+.hgrid{display:grid;grid-template-columns:1.3fr 1px 1fr;gap:20px}
+.vsep{background:var(--line)}
+.media{display:flex;gap:14px;min-width:0}
+.cover{width:104px;height:104px;flex:none;border-radius:18px;background:color-mix(in oklab,var(--acc) 20%,transparent) center/cover;display:flex;align-items:center;justify-content:center;font-size:38px;color:var(--acc)}
+.minfo{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:space-between}
+.mt{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ma{font-size:12px;color:var(--acc);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ma.mut{color:var(--mut);white-space:normal}
+.bar{height:4px;border-radius:2px;background:rgba(255,255,255,.14);overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--acc);border-radius:2px}
+.times{display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-top:4px}
+.ctrls{display:flex;align-items:center;gap:16px;color:#d9d7e2}
+.ctrls button svg{width:18px;height:18px}
+.play{width:38px;height:38px;border-radius:50%;background:#fff;color:#000!important;display:flex;align-items:center;justify-content:center}
+.play svg{width:16px!important;height:16px!important}
+.mapp{margin-left:auto;font-size:11px;color:var(--mut)}
+.cal{display:flex;flex-direction:column;gap:10px}
+.calh{display:flex;justify-content:space-between;align-items:baseline}
+.calh b{font-size:15px}.calh i{font-style:normal;color:var(--mut);font-size:12px}
+.week{display:grid;grid-template-columns:repeat(7,1fr);text-align:center}
+.week div{display:flex;flex-direction:column;align-items:center;gap:4px}
+.week small{font-size:10px;color:var(--mut)}
+.week span{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:600}
+.week span.today{background:var(--acc);color:#0b0b0f}
+.week .we span{color:var(--mut)}
+.event{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.06);border-radius:12px;padding:8px 12px}
+.event i{width:6px;height:6px;border-radius:50%;background:var(--acc);flex:none}
+.event b{display:block;font-size:12px}.event small{font-size:11px;color:var(--mut)}
+.quick{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.qt{padding:7px 12px;border-radius:20px;background:var(--card);font-size:12px;font-weight:600;white-space:nowrap}
+.qt:hover{background:var(--card2)}
+.qt.on{background:var(--acc);color:#0b0b0f}
+.vol{flex:1 1 150px;display:flex;align-items:center;gap:8px;min-width:0;padding-left:6px;color:var(--mut2)}
+input[type=range]{accent-color:var(--acc);flex:1;min-width:0}
+
+.wgrid{display:grid;grid-template-columns:1fr 1.4fr;gap:24px}
+.wcity{font-size:13px;color:var(--mut2);display:flex;align-items:center;gap:6px}
+.wtemp{font-size:64px;font-weight:600;line-height:1;letter-spacing:-2px;margin:8px 0 6px}
+.wdesc{font-size:15px;font-weight:600}
+.wmeta{font-size:12px;color:var(--mut);margin-top:4px}
+.wdays{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.wday{background:rgba(255,255,255,.06);border-radius:14px;padding:12px 6px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.wday small{font-size:11px;color:var(--mut)}.wday b{font-size:22px;line-height:1}
+.wday span{font-size:12px;font-weight:600}.wday em{font-style:normal;font-size:11px;color:var(--mut)}
+.wday.today{background:color-mix(in oklab,var(--acc) 22%,transparent)}
+
+.chat{height:300px;overflow-y:auto;overscroll-behavior:contain;display:flex;flex-direction:column;gap:12px;padding-right:4px;user-select:text}
+.m{display:flex;gap:8px;align-items:flex-start}
+.m.me{justify-content:flex-end}
+.m .nexav{width:24px;height:24px}
+.bub{max-width:80%;padding:8px 12px;border-radius:14px 14px 14px 4px;background:rgba(255,255,255,.08);font-size:13px;line-height:1.5;word-wrap:break-word}
+.m.me .bub{background:var(--acc);color:#0b0b0f;border-radius:14px 14px 4px 14px;white-space:pre-wrap}
+.bub p{margin:0 0 6px}.bub p:last-child{margin:0}
+.bub ul,.bub ol{margin:0 0 6px;padding-left:18px}
+.bub code{font-family:var(--mono);font-size:12px;background:rgba(255,255,255,.1);padding:1px 4px;border-radius:4px}
+.err{color:#ff9a9a}
+.typing{display:inline-flex;gap:4px;padding:4px 0}
+.typing i{width:6px;height:6px;border-radius:50%;background:var(--mut);animation:tp 1.2s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes tp{0%,60%,100%{opacity:.25}30%{opacity:1}}
+.sugg{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.chip{padding:6px 11px;border-radius:20px;border:1px solid rgba(255,255,255,.14);font-size:12px;color:#e6e4ee}
+.chip:hover{border-color:var(--acc)}
+.ask{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);border-radius:14px;padding:5px 5px 5px 14px;margin-top:10px}
+.ask input{flex:1;min-width:0;border:none;outline:none;background:none;font-size:13px}
+.ask input::placeholder,.fld::placeholder,textarea::placeholder{color:#6d6a7c}
+.sendb{width:32px;height:32px;border-radius:10px;background:var(--acc);color:#0b0b0f;display:flex;align-items:center;justify-content:center;flex:none}
+.sendb svg{width:15px;height:15px}
+.iconb{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--mut)}
+.iconb:hover{background:var(--card);color:var(--tx)}
+.iconb svg{width:15px;height:15px}
+
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.colh{display:flex;justify-content:space-between;align-items:center;min-height:28px;margin-bottom:8px}
+.colh b{font-size:15px}.colh span{font-size:12px;color:var(--mut)}
+.fld{background:rgba(255,255,255,.07);border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-size:13px;outline:none;width:100%}
+.fld:focus{border-color:color-mix(in oklab,var(--acc) 60%,transparent)}
+input[type=date].fld{color-scheme:dark}
+.list{display:flex;flex-direction:column;gap:2px;overflow-y:auto}
+.task{display:flex;align-items:center;gap:10px;padding:7px 6px;border-radius:10px}
+.task:hover{background:rgba(255,255,255,.04)}
+.chk{width:18px;height:18px;flex:none;border-radius:50%;border:2px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#0b0b0f}
+.task.done .chk{background:var(--acc);border-color:var(--acc)}
+.task span{flex:1}.task.done span{color:#6d6a7c;text-decoration:line-through}
+.x{color:#6d6a7c;font-size:15px;padding:0 4px}.x:hover{color:var(--tx)}
+textarea.note{width:100%;height:270px;resize:none;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:13px;line-height:1.5;outline:none}
+
+.clips{height:285px;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:8px;align-content:start}
+.clip{background:rgba(255,255,255,.06);border:1px solid transparent;border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.clip.pin{border-color:color-mix(in oklab,var(--acc) 45%,transparent)}
+.clip p{margin:0;font-size:12.5px;color:#e6e4ee;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-all}
+.clip div{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--mut)}
+.clip div span{flex:1}
+.lnk{font-size:11px;font-weight:600;color:var(--mut)}.lnk:hover{color:var(--tx)}
+.lnk.acc{color:var(--acc)}
+.empty{color:var(--mut);font-size:12px;padding:16px 0;text-align:center;grid-column:1/-1}
+
+.sw{width:36px;height:20px;border-radius:20px;background:var(--card2);position:relative;flex:none;transition:background .15s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#9a97a8;transition:transform .15s,background .15s}
+.sw.on{background:var(--acc)}.sw.on::after{transform:translateX(16px);background:#fff}
+.net{display:flex;align-items:center;gap:10px;padding:8px 8px;border-radius:10px;text-align:left;width:100%}
+.net:hover{background:rgba(255,255,255,.05)}
+.net b{flex:1;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.net small{font-size:11px;color:var(--mut)}
+.net.cur b{color:var(--acc);font-weight:600}
+.sig{display:flex;align-items:flex-end;gap:2px;height:12px;flex:none}
+.sig i{width:3px;border-radius:1px;background:rgba(255,255,255,.2)}
+.sig i.on{background:var(--tx)}
+.pw{display:flex;gap:6px;padding:4px 8px 8px}
+.btn{padding:8px 14px;border-radius:10px;font-size:12.5px;font-weight:700;background:var(--acc);color:#0b0b0f;white-space:nowrap}
+.btn.ghost{background:var(--card);color:var(--tx);font-weight:600}
+.btn.ghost:hover{background:var(--card2)}
+.spin{width:12px;height:12px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .7s linear infinite;display:inline-block}
+@keyframes sp{to{transform:rotate(360deg)}}
+.dev{display:flex;align-items:center;gap:10px;padding:8px;border-radius:10px}
+.dev i{width:7px;height:7px;border-radius:50%;background:#55526a;flex:none}
+.dev.on i{background:var(--ok)}
+.dev b{flex:1;font-weight:500}.dev small{font-size:11px;color:var(--mut)}
+
+.meter{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.meter div:first-child{display:flex;justify-content:space-between;font-size:12px;color:var(--mut2)}
+.meter div:first-child span:last-child{font-family:var(--mono);color:var(--tx)}
+.mbar{height:6px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden}
+.mbar i{display:block;height:100%;border-radius:3px;background:var(--acc);transition:width .8s}
+.slab{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--mut2);margin-bottom:14px}
+
+.tgrid{display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;margin-top:24px}
+.tdig{font-family:var(--mono);font-size:68px;font-weight:600;letter-spacing:-2px;line-height:1}
+.tbar{height:4px;border-radius:2px;background:rgba(255,255,255,.12);margin-top:16px;overflow:hidden}
+.tbar i{display:block;height:100%;width:0;background:var(--acc);transition:width .5s linear}
+.tside{display:flex;flex-direction:column;gap:10px;align-items:flex-end}
+.row{display:flex;gap:6px;align-items:center}
+.chip.on{border-color:var(--acc);color:#fff}
+
+.set{height:415px;overflow-y:auto;padding-right:6px}
+.sh{font-size:11px;font-weight:700;color:var(--mut);letter-spacing:.5px;margin:4px 0 8px}
+.sgrp{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.swatches{display:flex;gap:9px}
+.swt{width:26px;height:26px;border-radius:50%}
+.swt.on{box-shadow:0 0 0 2px #000,0 0 0 4px var(--c)}
+.seg{display:flex;gap:4px;padding:3px;background:var(--card);border-radius:10px}
+.seg button{flex:1;padding:6px 0;border-radius:8px;font-size:12px;font-weight:600;color:var(--mut)}
+.seg button.on{background:rgba(255,255,255,.16);color:#fff}
+.tg{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;cursor:pointer}
+.hint{font-size:12px;color:var(--mut);margin:0}
+.danger{color:#ff8f8f;font-size:12px;font-weight:600;align-self:flex-start}
+.upl{position:relative;cursor:pointer}
+.upl input{display:none}
+
+.onb{position:absolute;left:0;top:0;width:440px;padding:30px 28px 26px;opacity:0;pointer-events:none;transition:opacity .12s;display:flex;flex-direction:column;gap:16px}
+.m-onb .onb{opacity:1;pointer-events:auto;transition:opacity .3s .2s}
+.dots{display:flex;justify-content:center;gap:6px}
+.dots i{height:4px;width:6px;border-radius:2px;background:rgba(255,255,255,.18);transition:width .3s}
+.dots i.on{width:22px;background:var(--acc)}
+.ostep{display:flex;flex-direction:column;gap:14px}
+.ostep h2{margin:0;font-size:21px}
+.ostep p{margin:0;color:#9a97a8;font-size:13.5px;line-height:1.5}
+.center{align-items:center;text-align:center}
+.bigbtn{width:100%;padding:13px 0;border-radius:14px;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:10px}
+.bigbtn.white{background:#fff;color:#111}
+.bigbtn.ghost{background:var(--card);color:#fff;font-weight:600}
+.bigbtn.acc{background:var(--acc);color:#0b0b0f}
+.g{width:20px;height:20px;border-radius:50%;border:2px solid #111;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800}
+.lbl{display:flex;flex-direction:column;gap:6px;font-size:12px;color:#9a97a8}
+.prev{height:84px;border-radius:16px;background:#1c2a38 center/cover;display:flex;justify-content:center;overflow:hidden}
+.prev div{width:200px;height:34px;background:#000;display:flex;align-items:center;justify-content:space-between;padding:0 12px 0 5px;font-size:12px;font-weight:600}
+select.fld{color-scheme:dark;cursor:pointer}
+.langs{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.langs button{padding:6px 12px;border-radius:20px;border:1px solid rgba(255,255,255,.14);font-size:12px;color:#d9d7e2}
+.langs button.on{background:var(--acc);border-color:var(--acc);color:#0b0b0f;font-weight:600}
+.apps{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;max-height:320px;overflow-y:auto;align-content:start}
+.app{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;padding:16px 6px 12px;border-radius:16px;background:rgba(255,255,255,.05);transition:background .15s,transform .15s}
+.app:hover{background:rgba(255,255,255,.11);transform:translateY(-2px)}
+.app img,.app .ph{width:42px;height:42px;border-radius:10px}
+.app .ph{background:var(--acc);color:#0b0b0f;font-weight:700;font-size:18px;display:flex;align-items:center;justify-content:center}
+.app span{font-size:12px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.app .del{position:absolute;top:5px;right:6px;width:20px;height:20px;border-radius:50%;background:var(--bad);color:#fff;font-size:12px;font-weight:700;display:none;align-items:center;justify-content:center}
+.apps.editing .del{display:flex}
+.apps.editing .app{animation:wob .3s ease-in-out infinite alternate}
+@keyframes wob{from{transform:rotate(-1.5deg)}to{transform:rotate(1.5deg)}}
+/* анимации */
+button{transition:transform .12s,background-color .2s,color .2s,border-color .2s,box-shadow .2s}
+button:active:not(:disabled){transform:scale(.94)}
+.tab.on{box-shadow:inset 0 -2px 0 var(--acc)}
+section.enter>*{animation:rise .42s cubic-bezier(.2,.9,.3,1.15) both}
+section.enter>*:nth-child(2){animation-delay:.05s}section.enter>*:nth-child(3){animation-delay:.1s}section.enter>*:nth-child(4){animation-delay:.15s}
+section.enter .app,section.enter .wday,section.enter .clip,section.enter .task,section.enter .net,section.enter .meter,section.enter .week div{animation:rise .45s cubic-bezier(.2,.9,.3,1.2) both}
+.app:nth-child(2),.wday:nth-child(2),.clip:nth-child(2),.task:nth-child(2),.net:nth-child(2),.week div:nth-child(2),.meter:nth-child(2){animation-delay:.04s!important}
+.app:nth-child(3),.wday:nth-child(3),.clip:nth-child(3),.task:nth-child(3),.net:nth-child(3),.week div:nth-child(3),.meter:nth-child(3){animation-delay:.08s!important}
+.app:nth-child(4),.wday:nth-child(4),.clip:nth-child(4),.task:nth-child(4),.net:nth-child(4),.week div:nth-child(4),.meter:nth-child(4){animation-delay:.12s!important}
+.app:nth-child(5),.wday:nth-child(5),.clip:nth-child(5),.task:nth-child(5),.net:nth-child(5),.week div:nth-child(5){animation-delay:.16s!important}
+.app:nth-child(n+6),.wday:nth-child(n+6),.clip:nth-child(n+6),.task:nth-child(n+6),.net:nth-child(n+6),.week div:nth-child(n+6){animation-delay:.2s!important}
+@keyframes rise{from{opacity:0;transform:translateY(10px) scale(.97)}}
+.m{animation:pop .35s cubic-bezier(.2,.9,.3,1.3) both}
+.m.me{transform-origin:right bottom}.m:not(.me){transform-origin:left bottom}
+@keyframes pop{from{opacity:0;transform:scale(.85) translateY(6px)}}
+.mmid{animation:fadeIn .35s ease both}
+#miniText:not(:empty){animation:slideIn .4s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes slideIn{from{opacity:0;transform:translateY(6px);filter:blur(3px)}}
+@keyframes fadeIn{from{opacity:0}}
+#island{transition:width .6s cubic-bezier(.32,1.35,.45,1),height .6s cubic-bezier(.32,1.35,.45,1),border-radius .5s,top .4s,box-shadow .4s}
+#island:hover{box-shadow:0 0 0 1px rgba(255,255,255,.06)}
+.cover{transition:background-image .4s,transform .4s}
+.cover:hover{transform:scale(1.04) rotate(-1deg)}
+.play:hover{transform:scale(1.08)}
+.swt{transition:transform .2s cubic-bezier(.3,1.5,.5,1),box-shadow .2s}
+.swt:hover{transform:scale(1.15)}
+.qt.on{animation:glow .5s ease}
+@keyframes glow{0%{box-shadow:0 0 0 0 color-mix(in oklab,var(--acc) 70%,transparent)}100%{box-shadow:0 0 0 10px transparent}}
+.task.done .chk{animation:check .35s cubic-bezier(.3,1.6,.5,1)}
+@keyframes check{0%{transform:scale(.4)}70%{transform:scale(1.2)}}
+.mbar i,.tbar i,.bar i{transition:width .8s cubic-bezier(.3,1,.4,1)}
+.wtemp{animation:rise .6s cubic-bezier(.2,.9,.3,1.2) both}
+.app:hover img{transform:scale(1.08)}.app img{transition:transform .2s cubic-bezier(.3,1.5,.5,1)}
+.langs button:hover{border-color:var(--acc)}
+.full,.onb{will-change:opacity}
+.fx{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.fx i{position:absolute;top:-6px;border-radius:50%;animation:fall linear infinite}
+.fx.hw i{top:auto;bottom:-6px;animation-name:ember}
+@keyframes fall{to{transform:translate(var(--dx),620px)}}
+@keyframes ember{to{transform:translate(var(--dx),-620px);opacity:0}}
+.srch{position:absolute;left:0;top:0;width:560px;padding:12px 14px;opacity:0;pointer-events:none;transition:opacity .12s}
+.m-search .srch{opacity:1;pointer-events:auto;transition:opacity .25s .15s}
+.m-search .mini{opacity:0;pointer-events:none}
+.m-search{cursor:default!important}
+.drop .srch{padding-top:16px}
+.sbox{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.08);border-radius:14px;padding:10px 14px;color:var(--mut2)}
+.sbox input{flex:1;min-width:0;border:none;outline:none;background:none;font-size:15px}
+.sbox kbd{font:11px var(--mono);color:var(--mut);border:1px solid var(--line);border-radius:6px;padding:2px 6px}
+.sres{display:flex;flex-direction:column;gap:2px;margin-top:8px;max-height:360px;overflow-y:auto}
+.sr{display:flex;align-items:center;gap:12px;padding:8px 10px;border-radius:12px;text-align:left;width:100%;animation:rise .3s cubic-bezier(.2,.9,.3,1.2) both}
+.sr.sel,.sr:hover{background:rgba(255,255,255,.09)}
+.sr img,.sr .si{width:28px;height:28px;border-radius:8px;flex:none}
+.sr .si{background:var(--card2);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--acc)}
+.sr b{flex:1;min-width:0;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sr small{color:var(--mut);font-size:11px;flex:none}
+.sr.big b{font-size:20px;font-weight:700;font-family:var(--mono);color:#fff}
+.osd{display:flex;align-items:center;gap:10px;width:100%;text-align:left}
+.osd .ob{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.15);overflow:hidden}
+.osd .ob i{display:block;height:100%;background:var(--acc);border-radius:3px;transition:width .2s}
+.rec{width:8px;height:8px;border-radius:50%;background:var(--bad);flex:none;animation:blinkr 1s infinite}
+@keyframes blinkr{50%{opacity:.3}}
+.batt-anim{width:30px;height:14px;border:1.5px solid rgba(255,255,255,.6);border-radius:4px;padding:2px;display:flex;flex:none}
+.batt-anim i{background:var(--ok);border-radius:2px;animation:charge 1.2s ease-in-out infinite}
+@keyframes charge{50%{opacity:.35}}
+#schDays button{padding:6px 0}
+#qRec.on{background:var(--bad);color:#fff}
+</style>
+</head>
+<body>
+<div id="island" data-hit>
+  <div id="ibg" class="ibg"></div><div id="idim" class="idim"></div><div id="fx" class="fx"></div>
+
+  <div class="mini">
+    <div class="nexav" id="miniNex" style="background:#15131c"><img src="logo.png" alt="" style="width:26px;height:26px;object-fit:cover"></div>
+    <img id="miniCover" class="mcover" alt="" hidden>
+    <div class="mmid" id="miniText"></div>
+    <div class="mright" id="miniRight"></div>
+  </div>
+
+  <div class="full" id="full">
+    <div class="hdr">
+      <div class="tabs" id="tabs">
+        <button class="tab" data-tab="home" title="Главная"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3 3 10.5V21h6.5v-6h5v6H21V10.5z"/></svg></button>
+        <button class="tab" data-tab="apps" title="Программы"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="8" height="8" rx="2.5"/><rect x="13" y="3" width="8" height="8" rx="2.5"/><rect x="3" y="13" width="8" height="8" rx="2.5"/><rect x="13" y="13" width="8" height="8" rx="2.5"/></svg></button>
+        <button class="tab" data-tab="weather" title="Погода"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="9" r="3.5"/><path d="M9 2v1.5M2 9h1.5M4 4l1 1M14 4l-1 1M8 20h9a4 4 0 0 0 0-8 5 5 0 0 0-9.5 1.5A3.3 3.3 0 0 0 8 20z"/></svg></button>
+        <button class="tab" data-tab="chat" title="Nex"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9l-5 4v-4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg></button>
+        <button class="tab" data-tab="tasks" title="Задачи"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l2 2 3-3M4 13l2 2 3-3M13 7h7M13 14h7M4 20h16"/></svg></button>
+        <button class="tab" data-tab="school" title="Расписание"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5M9 8h6"/></svg></button>
+        <button class="tab" data-tab="clip" title="Буфер обмена"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h4"/></svg></button>
+        <button class="tab" data-tab="connect" title="Wi‑Fi и Bluetooth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M2 9a15 15 0 0 1 20 0M5.5 12.5a10 10 0 0 1 13 0M9 16a5 5 0 0 1 6 0"/><circle cx="12" cy="19.5" r="1" fill="currentColor"/></svg></button>
+        <button class="tab" data-tab="system" title="Система"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg></button>
+        <button class="tab" data-tab="timer" title="Таймер"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg></button>
+      </div>
+      <div class="hright">
+        <button class="tab" id="hSearch" title="Поиск · Ctrl+Shift+Space"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>
+        <span class="batt" id="batt" hidden><span id="battTxt"></span><span class="bicon"><i id="battFill"></i></span></span>
+        <button class="ava" id="hAva" data-tab="settings" title="Профиль и настройки"></button>
+      </div>
+    </div>
+
+    <section data-sec="home">
+      <div class="hgrid">
+        <div class="media">
+          <div class="cover" id="cover">♪</div>
+          <div class="minfo">
+            <div><div class="mt" id="mTitle">Тишина</div><div class="ma mut" id="mArtist">Включи музыку в Spotify, YouTube или любом плеере</div></div>
+            <div id="mProg"><div class="bar"><i id="mBar"></i></div><div class="times"><span id="mPos">0:00</span><span id="mDur">0:00</span></div></div>
+            <div class="ctrls">
+              <button id="mPrev" title="Назад"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button>
+              <button id="mPlay" class="play" title="Пауза / играть"></button>
+              <button id="mNext" title="Дальше"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button>
+              <span class="mapp" id="mApp"></span>
+            </div>
+          </div>
+        </div>
+        <div class="vsep"></div>
+        <div class="cal">
+          <div class="calh"><span><b id="calM"></b> <i id="calY"></i></span><span id="calW" style="font-size:12px;color:#d9d7e2"></span></div>
+          <div class="week" id="week"></div>
+          <div class="event"><i></i><div><b id="evT"></b><small id="evS"></small></div></div>
+        </div>
+      </div>
+      <div class="quick">
+        <button class="qt" id="qDnd">Не беспокоить</button>
+        <button class="qt" id="qWifi">Wi‑Fi</button>
+        <button class="qt" id="qBt">Bluetooth</button>
+        <button class="qt" id="qNight">Ночной свет</button>
+        <button class="qt" id="qShot">Скриншот</button>
+        <button class="qt" id="qRec">Запись</button>
+        <button class="qt" id="qPick">Пипетка</button>
+        <div class="vol"><button id="qMute" title="Без звука"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 8.5a5 5 0 0 1 0 7" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg></button><input type="range" id="vol" min="0" max="100" value="50"></div>
+      </div>
+    </section>
+
+    <section data-sec="apps">
+      <div class="colh"><b>Мои программы</b><div class="row"><button class="lnk" id="appsEdit">Изменить</button><button class="btn" id="appsAdd">+ Добавить</button></div></div>
+      <div class="apps" id="apps"></div>
+    </section>
+
+    <section data-sec="weather">
+      <div class="wgrid">
+        <div>
+          <div class="wcity"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg><span id="wCity">Ищу твой город…</span></div>
+          <div class="wtemp" id="wTemp">--°</div>
+          <div class="wdesc" id="wDesc"></div>
+          <div class="wmeta" id="wMeta"></div>
+        </div>
+        <div class="wdays" id="wDays"></div>
+      </div>
+    </section>
+
+    <section data-sec="chat">
+      <div class="chat" id="chat"></div>
+      <div class="sugg" id="sugg">
+        <button class="chip" data-q="Привет! Как ты?">Привет!</button>
+        <button class="chip" data-q="Мне скучно. Чем заняться прямо сейчас?">Мне скучно</button>
+        <button class="chip" data-q="Что посмотреть сегодня вечером?">Что посмотреть?</button>
+        <button class="chip" data-q="Что скажешь про музыку, которую я сейчас слушаю?">Про мою музыку</button>
+      </div>
+      <form class="ask" id="askForm">
+        <input id="askIn" placeholder="Напиши Nex…" autocomplete="off">
+        <button type="button" class="iconb" id="newChat" title="Новый разговор"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+        <button class="sendb" id="sendB" title="Отправить"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+      </form>
+    </section>
+
+    <section data-sec="tasks">
+      <div class="cols">
+        <div>
+          <div class="colh"><b>Задачи</b><span id="tLeft"></span></div>
+          <input class="fld" id="taskIn" placeholder="Новая задача — Enter" autocomplete="off">
+          <div class="list" id="taskList" style="height:150px;margin-top:8px"></div>
+          <div class="colh" style="margin:10px 0 4px"><b style="font-size:13px">Напоминания</b></div>
+          <div class="list" id="remList" style="max-height:80px"></div>
+        </div>
+        <div>
+          <div class="colh"><b>Заметка</b><span>сохраняется сама</span></div>
+          <textarea class="note" id="note" placeholder="Мысли, ссылки, идеи…"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <section data-sec="school">
+      <div class="colh"><b>Расписание</b><span id="schNext"></span></div>
+      <div class="seg" id="schDays"></div>
+      <div class="list" id="schList" style="height:196px;margin-top:10px"></div>
+      <div class="row" style="margin-top:8px"><input class="fld" id="schTime" type="time" value="08:30" style="width:120px;color-scheme:dark"><input class="fld" id="schName" placeholder="Урок — Enter" autocomplete="off"></div>
+    </section>
+
+    <section data-sec="clip">
+      <div class="colh"><b>Буфер обмена</b><button class="lnk" id="clipClear">Очистить</button></div>
+      <div class="clips" id="clips"></div>
+    </section>
+
+    <section data-sec="connect">
+      <div class="cols">
+        <div>
+          <div class="colh"><b>Wi‑Fi</b><div class="row"><button class="iconb" id="wfScan" title="Обновить"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"/></svg></button><button class="sw" id="wfSw" title="Вкл / выкл"></button></div></div>
+          <div class="list" id="wfList" style="height:296px"></div>
+        </div>
+        <div>
+          <div class="colh"><b>Bluetooth</b><div class="row"><button class="iconb" id="btScan" title="Обновить"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6"/></svg></button><button class="sw" id="btSw" title="Вкл / выкл"></button></div></div>
+          <div class="list" id="btList" style="height:250px"></div>
+          <button class="btn ghost" id="btAdd" style="width:100%;margin-top:8px">Добавить устройство…</button>
+        </div>
+      </div>
+    </section>
+
+    <section data-sec="system">
+      <div class="cols">
+        <div id="meters"></div>
+        <div>
+          <label class="slab"><span>Громкость · <b id="volTxt">50</b>%</span><input type="range" id="vol2" min="0" max="100"></label>
+          <label class="slab" id="brightBox" hidden><span>Яркость · <b id="brTxt">0</b>%</span><input type="range" id="bright" min="0" max="100"></label>
+          <p class="hint" id="upTxt"></p>
+          <div class="sh" style="margin-top:14px">СЕГОДНЯ ЗА КОМПЬЮТЕРОМ</div>
+          <div id="usage"></div>
+        </div>
+      </div>
+    </section>
+
+    <section data-sec="timer">
+      <div class="tgrid">
+        <div><div class="tdig" id="tDig">25:00</div><div class="tbar"><i id="tBar"></i></div><div class="hint" id="pomoTxt" style="margin-top:10px"></div></div>
+        <div class="tside">
+          <label class="tg" style="gap:10px">Помодоро 25/5<button class="sw" id="pomoSw"></button></label>
+          <div class="row" id="presets"></div>
+          <div class="row"><button class="btn ghost" id="tReset">Сброс</button><button class="btn" id="tGo">Старт</button></div>
+        </div>
+      </div>
+    </section>
+
+    <section data-sec="settings">
+      <div class="set">
+        <div class="cols">
+          <div>
+            <div class="sh">ПРОФИЛЬ</div>
+            <div class="sgrp">
+              <div class="row" style="gap:12px">
+                <label class="upl"><div class="ava" id="sAva" style="width:56px;height:56px;font-size:22px"></div><input type="file" accept="image/*" data-img="avatar"></label>
+                <div style="min-width:0"><b id="sName" style="font-size:15px"></b><div id="sAcc" style="font-size:11px;color:var(--mut)"></div></div>
+              </div>
+              <input class="fld" data-p="name" placeholder="Имя">
+              <input class="fld" type="date" data-p="birth">
+              <input class="fld" data-p="hobby" placeholder="Увлечения">
+              <button class="lnk acc" id="sGoogle" style="align-self:flex-start;font-size:12px">Привязать Google</button>
+            </div>
+            <div class="sh">ПОГОДА</div>
+            <div class="sgrp">
+              <input class="fld" id="sCity" placeholder="Город (пусто — определить сам)" autocomplete="off">
+              <div id="citySug" style="display:flex;flex-direction:column;gap:2px"></div>
+            </div>
+            <div class="sh">ЯЗЫК</div>
+            <div class="sgrp">
+              <div class="langs" id="sLang" style="justify-content:flex-start"><button data-l="ru">Русский</button><button data-l="uk">Українська</button><button data-l="en">English</button><button data-l="de">Deutsch</button><button data-l="zh">中文</button><button data-l="ja">日本語</button></div>
+            </div>
+            <div class="sh">СЕРВЕР OLLAMA</div>
+            <div class="sgrp">
+              <input class="fld" data-s="ollamaUrl" placeholder="https://…trycloudflare.com" spellcheck="false">
+              <input class="fld" data-s="ollamaModel" placeholder="qwen2.5:14b" spellcheck="false">
+              <p class="hint">Адрес оставь пустым — Ollama на этом ПК.</p>
+            </div>
+            <div class="sh">ДРУГОЕ</div>
+            <div class="sgrp">
+              <label class="tg">Только на рабочем столе<button class="sw" id="sDesk"></button></label>
+              <label class="tg">Запускать вместе с Windows<button class="sw" id="sAuto"></button></label>
+              <p class="hint">Открыть островок: Ctrl + Alt + N</p>
+              <p class="hint">Поиск: Ctrl + Shift + Space · Перевод: Ctrl + Alt + T</p>
+              <p class="hint" style="color:var(--acc)">Nex 2.3</p>
+              <button class="danger" id="sLogout">Выйти из профиля</button>
+            </div>
+          </div>
+          <div>
+            <div class="sh">ЦВЕТ</div>
+            <div class="sgrp"><div class="swatches" id="sSw"></div></div>
+            <div class="sh">ФОН ОСТРОВКА</div>
+            <div class="sgrp">
+              <div class="seg" id="sBg"><button data-v="dark">Чёрный</button><button data-v="wall">Мои обои</button><button data-v="custom">Своя</button></div>
+              <label class="upl lnk acc" id="sBgUp" style="font-size:12px">Загрузить картинку…<input type="file" accept="image/*" data-img="bgImg"></label>
+            </div>
+            <div class="sh">ВИД</div>
+            <div class="sgrp"><div class="seg" id="sShape"><button data-v="drop">Капля сверху</button><button data-v="float">Плавающий</button></div></div>
+            <div class="sh">ТЕМА</div>
+            <div class="sgrp"><div class="seg" id="sTheme"><button data-v="none">Обычная</button><button data-v="ny">Новый год</button><button data-v="hw">Хэллоуин</button></div></div>
+            <div class="sh" hidden>МОЗГ NEX</div>
+            <div class="sgrp" hidden>
+              <div class="seg" id="sProv"><button data-v="ollama">Ollama</button><button data-v="openrouter">OpenRouter</button><button data-v="gemini">Gemini</button><button data-v="openai">ChatGPT</button><button data-v="github">GPT free</button></div>
+              <div data-for="ollama"><input class="fld" data-s="ollamaModel" placeholder="qwen2.5:7b"></div>
+              <div data-for="openrouter" style="display:flex;flex-direction:column;gap:8px"><input class="fld" type="password" data-s="orKey" placeholder="Ключ sk-or-…"><input class="fld" data-s="orModel" placeholder="Модель"><button class="lnk acc" data-url="https://openrouter.ai/keys" style="align-self:flex-start">Получить ключ →</button></div>
+              <div data-for="github" style="display:flex;flex-direction:column;gap:8px"><p class="hint">GPT-4o mini бесплатно через GitHub. Нужен токен с правом Models.</p><input class="fld" type="password" data-s="ghKey" placeholder="Токен github_pat_…"><input class="fld" data-s="ghModel" placeholder="openai/gpt-4o-mini"><button class="lnk acc" data-url="https://github.com/settings/personal-access-tokens/new" style="align-self:flex-start">Создать токен →</button></div>
+              <div data-for="openai" style="display:flex;flex-direction:column;gap:8px"><input class="fld" type="password" data-s="openaiKey" placeholder="Ключ sk-…"><input class="fld" data-s="openaiModel" placeholder="gpt-4o-mini"><button class="lnk acc" data-url="https://platform.openai.com/api-keys" style="align-self:flex-start">Получить ключ →</button></div>
+              <div data-for="gemini" style="display:flex;flex-direction:column;gap:8px"><input class="fld" type="password" data-s="geminiKey" placeholder="Ключ AIza…"><input class="fld" data-s="geminiModel" placeholder="Модель"><button class="lnk acc" data-url="https://aistudio.google.com/apikey" style="align-self:flex-start">Получить ключ →</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="srch" id="srch">
+    <div class="sbox"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="sq" placeholder="Программы, файлы, 2+2*3, 100 usd, вопрос Nex…" autocomplete="off" spellcheck="false"><kbd>Esc</kbd></div>
+    <div class="sres" id="sres"></div>
+  </div>
+
+  <div class="onb" id="onb">
+    <div class="dots" id="dots"><i></i><i></i><i></i><i></i></div>
+    <div class="ostep center" data-step="auth">
+      <div class="langs" id="oLang"><button data-l="ru">Русский</button><button data-l="uk">Українська</button><button data-l="en">English</button><button data-l="de">Deutsch</button><button data-l="zh">中文</button><button data-l="ja">日本語</button></div>
+      <img src="logo.png" alt="Nex" style="width:104px;height:104px;border-radius:28px">
+      <div><h2>Привет! Я Nex</h2><p style="margin-top:6px">Я живу в островке сверху экрана: музыка, погода, Wi‑Fi, задачи — и я сам. Давай познакомимся.</p></div>
+      <button class="bigbtn white" id="oGoogle"><svg width="18" height="18" viewBox="0 0 48 48" style="flex:none"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span id="oGoogleTxt">Продолжить с Google</span></button>
+      <button class="bigbtn ghost" id="oManual" style="background:transparent;box-shadow:none;color:#8b8a93;font-weight:500;height:auto;padding:6px">Другая почта</button>
+      <p id="oNote" style="font-size:12px" hidden></p>
+    </div>
+    <div class="ostep" data-step="email">
+      <div><h2>Твоя почта</h2><p style="margin-top:4px" id="eSub">Пришлём код, чтобы подтвердить, что это ты.</p></div>
+      <label class="lbl" id="eMailL">Почта<input class="fld" id="eMail" type="email" placeholder="you@gmail.com" autocomplete="email"></label>
+      <div id="eCodeBox" hidden style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;gap:8px;justify-content:center" id="eCells"><input class="fld" maxlength="1" inputmode="numeric" style="width:46px;height:54px;padding:0;text-align:center;font-size:22px;font-weight:700"><input class="fld" maxlength="1" inputmode="numeric" style="width:46px;height:54px;padding:0;text-align:center;font-size:22px;font-weight:700"><input class="fld" maxlength="1" inputmode="numeric" style="width:46px;height:54px;padding:0;text-align:center;font-size:22px;font-weight:700"><input class="fld" maxlength="1" inputmode="numeric" style="width:46px;height:54px;padding:0;text-align:center;font-size:22px;font-weight:700"><input class="fld" maxlength="1" inputmode="numeric" style="width:46px;height:54px;padding:0;text-align:center;font-size:22px;font-weight:700"><input class="fld" maxlength="1" inputmode="numeric" style="width:46px;height:54px;padding:0;text-align:center;font-size:22px;font-weight:700"></div>
+        <button class="bigbtn ghost" id="eResend" style="height:36px;font-size:12px">Отправить снова</button>
+      </div>
+      <p id="eNote" style="font-size:12px;min-height:16px;color:var(--bad)"></p>
+      <button class="bigbtn acc" id="eGo">Отправить код</button>
+      <button class="bigbtn ghost" id="eBack" style="height:36px;font-size:12px">Назад</button>
+    </div>
+    <div class="ostep" data-step="profile">
+      <div><h2>Расскажи о себе</h2><p style="margin-top:4px">Так Nex будет знать, как к тебе обращаться.</p></div>
+      <div class="row" style="gap:14px">
+        <label class="upl"><div class="ava" id="oAva" style="width:64px;height:64px;font-size:24px"></div><input type="file" accept="image/*" data-img="avatar"></label>
+        <p style="font-size:12px">Нажми на круг, чтобы поставить свою аватарку.<br><span id="oAcc"></span></p>
+      </div>
+      <label class="lbl">Имя<input class="fld" data-p="name" placeholder="Как тебя зовут?"></label>
+      <label class="lbl">Дата рождения<input class="fld" type="date" data-p="birth"></label>
+      <label class="lbl">Чем увлекаешься?<input class="fld" data-p="hobby" placeholder="Игры, музыка, рисование…"></label>
+      <button class="bigbtn acc" id="oNext">Дальше</button>
+    </div>
+    <div class="ostep" data-step="style">
+      <div><h2>Сделай островок своим</h2><p style="margin-top:4px">Всё можно поменять потом в настройках.</p></div>
+      <div class="prev" id="oPrev"><div id="oPrevI"><span class="nexav" style="width:24px;height:24px"><img src="nex/happy.png" alt="" style="width:27px"></span><span id="oPrevT"></span><span style="width:8px;height:8px;border-radius:50%;background:var(--acc)"></span></div></div>
+      <div class="swatches" id="oSw" style="justify-content:space-between"></div>
+      <div class="seg" id="oShape"><button data-v="drop">Капля сверху</button><button data-v="float">Плавающий</button></div>
+      <button class="bigbtn acc" id="oDone">Готово</button>
+    </div>
+  </div>
+</div>
+<script src="i18n.js"></script>
+<script src="renderer.js"></script>
+<script src="extras.js"></script>
+</body>
+</html>

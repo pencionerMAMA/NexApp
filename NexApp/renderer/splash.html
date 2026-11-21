@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+html,body{margin:0;height:100%;background:transparent;overflow:hidden;font-family:"Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;color:#fff;user-select:none}
+.card{position:absolute;inset:0;border-radius:14px;background:#111113;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07);overflow:hidden;padding:26px 30px 24px;display:flex;flex-direction:column;animation:in .45s cubic-bezier(.2,.9,.3,1) both;transition:opacity .35s,transform .35s}
+.card.out{opacity:0;transform:scale(.97)}
+.card::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:22px 22px;-webkit-mask-image:linear-gradient(100deg,transparent 35%,#000 75%);pointer-events:none}
+.card::after{content:"";position:absolute;top:-40%;right:-10%;width:60%;height:180%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.04),transparent);transform:rotate(12deg);pointer-events:none}
+.top{position:relative;display:flex;align-items:center;gap:10px}
+.top img{width:26px;height:26px;border-radius:7px}
+.name{font-size:19px;font-weight:700;letter-spacing:.5px}
+.ver{font-size:14px;color:#77757f;font-weight:500}
+.cat{position:absolute;right:26px;bottom:-6px;height:132px;pointer-events:none;animation:cat .6s .15s cubic-bezier(.2,.9,.3,1.2) both}
+@keyframes cat{from{opacity:0;transform:translateY(24px)}}
+.title,.bar,.st{margin-right:150px}
+.title{position:relative;margin-top:auto;font-size:19px;font-weight:600}
+.bar{position:relative;margin-top:14px;height:3px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
+.bar i{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:2px;background:#c9c7d1;transition:width .6s cubic-bezier(.3,.8,.3,1)}
+.st{position:relative;margin-top:12px;font-size:12.5px;color:#7d7b86;height:16px;font-variant-numeric:tabular-nums;white-space:nowrap;display:flex;justify-content:space-between;gap:12px}
+.st span:first-child{overflow:hidden;text-overflow:ellipsis}
+.pct{color:#c9c7d1;flex:none}
+@keyframes in{from{opacity:0;transform:translateY(8px) scale(.98)}}
+</style>
+</head>
+<body>
+<div class="card" id="card">
+  <div class="top"><img src="logo.png" alt=""><span class="name">NEX</span><span class="ver">1.0.0</span></div>
+  <img class="cat" src="nex/happy.png" alt="">
+  <div class="title" id="title"></div>
+  <div class="bar"><i id="bar"></i></div>
+  <div class="st" id="st"></div>
+</div>
+<script>
+const T = {
+  ru: ['Подготовка Nex', 'Загрузка компонентов…', 'Подготовка островка…', 'Почти готово…'],
+  en: ['Preparing Nex', 'Loading components…', 'Preparing the island…', 'Almost ready…'],
+  de: ['Nex wird vorbereitet', 'Komponenten werden geladen…', 'Insel wird vorbereitet…', 'Fast fertig…'],
+  uk: ['Підготовка Nex', 'Завантаження компонентів…', 'Підготовка острівця…', 'Майже готово…'],
+  zh: ['正在准备 Nex', '正在加载组件…', '正在准备灵动岛…', '马上就好…'],
+  ja: ['Nex を準備中', 'コンポーネントを読み込み中…', 'アイランドを準備中…', 'もうすぐ…']
+};
+const lang = new URLSearchParams(location.search).get('lang') || 'ru';
+const s = T[lang] || T.ru, st = document.getElementById('st'), bar = document.getElementById('bar');
+document.getElementById('title').textContent = s[0];
+const setupMode = new URLSearchParams(location.search).get('mode') === 'setup';
+let i = 1;
+function step() { if (setupMode || window.progOn) return; if (i < s.length) { st.textContent = s[i]; bar.style.width = (8 + (i - 1) * 30) + '%'; i++; setTimeout(step, 800); } }
+setTimeout(step, 200);
+if (setupMode) { st.textContent = '…'; bar.style.width = '2%'; }
+window.prog = d => {
+  window.progOn = true;
+  document.getElementById('title').textContent = d.title;
+  if (d.pct != null) bar.style.width = Math.max(2, d.pct) + '%';
+  st.innerHTML = '';
+  const a = document.createElement('span'); a.textContent = d.status; st.appendChild(a);
+  if (d.pct != null) { const p = document.createElement('span'); p.className = 'pct'; p.textContent = d.pct + '%'; st.appendChild(p); }
+};
+window.done = () => { bar.style.width = '100%'; setTimeout(() => document.getElementById('card').classList.add('out'), 250); };
+</script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+{
+  "name": "nex",
+  "version": "1.0.0",
+  "description": "Nex — островок для Windows",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable --publish never"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.nex.app",
+    "productName": "Nex",
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "ps/**/*",
+      "extras-main.js",
+      "key.json"
+    ],
+    "win": {
+      "target": "portable",
+      "icon": "build/icon.png"
+    },
+    "portable": {
+      "artifactName": "Nex.exe"
+    }
+  },
+  "dependencies": {
+    "nodemailer": "^6.9.14"
+  }
+}
